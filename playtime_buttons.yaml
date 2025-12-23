@@ -1,0 +1,7 @@
+playtime_add_5:
+  name: "PlayTime +5 Minutes"
+  icon: mdi:timer-plus
+
+playtime_reset:
+  name: "Reset PlayTime"
+  icon: mdi:timer-off

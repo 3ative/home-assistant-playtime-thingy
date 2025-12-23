@@ -1,0 +1,6 @@
+playtime_set_seconds:
+  name: PlayTime Set Seconds
+  min: 0
+  max: 86400 # 24 hours in seconds
+  step: 1
+  mode: box

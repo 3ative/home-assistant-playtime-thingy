@@ -1,0 +1,39 @@
+- trigger:
+    - platform: time_pattern
+      seconds: "/1"
+    - platform: state
+      entity_id:
+        - input_datetime.playtime_end_time
+        - input_number.playtime_set_seconds
+        - switch.pc_fing_one_switch
+  sensor:
+    - name: "PlayTime Remaining Seconds"
+      unit_of_measurement: "s"
+      state: >
+        {% if is_state('switch.pc_fing_one_switch', 'on') %}
+          {% set end = states('input_datetime.playtime_end_time') %}
+          {% if end not in ['unknown', 'unavailable'] %}
+            {% set end_ts = as_timestamp(end, 0) %}
+            {% set now_ts = as_timestamp(now()) %}
+            {% set remaining = (end_ts - now_ts) | int %}
+            {{ max(remaining, 0) }}
+          {% else %}
+            0
+          {% endif %}
+        {% else %}
+          {{ states('input_number.playtime_set_seconds') | int }}
+        {% endif %}
+
+    - name: "PlayTime Hours"
+      state: >
+        {{ (states('sensor.playtime_remaining_seconds') | int // 3600) }}
+
+    - name: "PlayTime Minutes"
+      state: >
+        {{ (states('sensor.playtime_remaining_seconds') | int % 3600) // 60 }}
+
+    - name: "PlayTime Display"
+      state: >
+        {% set h = states('sensor.playtime_hours') | int %}
+        {% set m = states('sensor.playtime_minutes') | int %}
+        {{ '%d:%02d' | format(h, m) }}

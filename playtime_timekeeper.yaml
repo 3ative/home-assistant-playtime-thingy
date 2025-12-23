@@ -1,0 +1,4 @@
+playtime_end_time:
+  name: PlayTime End Time
+  has_date: true
+  has_time: true

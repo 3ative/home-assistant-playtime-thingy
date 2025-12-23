@@ -1,0 +1,101 @@
+# Button: Add 5 minutes
+- alias: "PlayTime - Add 5 Minutes Button"
+  trigger:
+    - platform: state
+      entity_id: input_button.playtime_add_5
+  action:
+    - choose:
+        # Switch OFF - add to set time
+        - conditions:
+            - condition: state
+              entity_id: switch.pc_fing_one_switch
+              state: "off"
+          sequence:
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.playtime_set_seconds
+              data:
+                value: "{{ states('input_number.playtime_set_seconds') | int + 300 }}"
+        # Switch ON - extend running timer
+        - conditions:
+            - condition: state
+              entity_id: switch.pc_fing_one_switch
+              state: "on"
+          sequence:
+            - action: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.playtime_end_time
+              data:
+                timestamp: "{{ as_timestamp(states('input_datetime.playtime_end_time')) + 300 }}"
+
+# Button: Reset
+- alias: "PlayTime - Reset Button"
+  trigger:
+    - platform: state
+      entity_id: input_button.playtime_reset
+  action:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.playtime_set_seconds
+      data:
+        value: 0
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.playtime_end_time
+      data:
+        timestamp: "{{ as_timestamp(now()) }}"
+
+# Switch turns ON - start countdown
+- alias: "PlayTime - Start on Switch On"
+  trigger:
+    - platform: state
+      entity_id: switch.pc_fing_one_switch
+      to: "on"
+  condition:
+    - condition: numeric_state
+      entity_id: input_number.playtime_set_seconds
+      above: 0
+  action:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.playtime_end_time
+      data:
+        timestamp: "{{ as_timestamp(now()) + states('input_number.playtime_set_seconds') | int }}"
+
+# Switch turns OFF - pause (save remaining time)
+- alias: "PlayTime - Pause on Switch Off"
+  trigger:
+    - platform: state
+      entity_id: switch.pc_fing_one_switch
+      from: "on"
+      to: "off"
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.playtime_remaining_seconds
+      above: 0
+  action:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.playtime_set_seconds
+      data:
+        value: "{{ states('sensor.playtime_remaining_seconds') | int }}"
+
+# Timer expires - turn off switch
+- alias: "PlayTime - Expired"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.playtime_remaining_seconds
+      below: 1
+  condition:
+    - condition: state
+      entity_id: switch.pc_fing_one_switch
+      state: "on"
+  action:
+    - action: switch.turn_off
+      target:
+        entity_id: switch.pc_fing_one_switch
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.playtime_set_seconds
+      data:
+        value: 0
